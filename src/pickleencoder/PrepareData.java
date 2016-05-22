@@ -6,7 +6,11 @@
 package pickleencoder;
 import java.io.*;
 import java.lang.reflect.Array;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Objects;
 import org.apache.mahout.math.*;
 import org.apache.mahout.math.jet.random.Normal;
 
@@ -25,6 +29,20 @@ public class PrepareData {
         public Pair(Double[][] f, Double[][]s){
             first = f;
             second = s;
+        }
+    }
+    
+    class PreparedData{
+        
+        public ArrayList<Date> dates;
+        public ArrayList<Integer> labels;
+        public ArrayList<Double[]> gmm_hist_buy;
+        public ArrayList<Double[]> gmm_hist_sell;
+        public PreparedData(ArrayList<Date> d, ArrayList<Integer> l, ArrayList<Double[]> f, ArrayList<Double[]> s){
+            dates = d;
+            labels = l;
+            gmm_hist_buy = f;
+            gmm_hist_sell = s;
         }
     }
     
@@ -67,38 +85,52 @@ public class PrepareData {
 
 /////////////////////// LOAD DATA FROM SER /////////////////
 
-      Date []gmm_dates = null;
-      Double [][] gmm_num1 = null;
-      Double [][] gmm_num2 = null;
-      Date []stat_dates = null;
-      Double [][] stat_num1 = null;
-      Double [][] stat_num2 = null;
-      try
-      {
-         FileInputStream fileIn = new FileInputStream("/home/adam/Pulpit/hdidm/OBS_GMM.V2.9061.cer");
-         ObjectInputStream in = new ObjectInputStream(fileIn);
-         gmm_dates = (Date[]) in.readObject();
-         gmm_num1 = (Double[][]) in.readObject();
-         gmm_num2 = (Double[][]) in.readObject();
-         in.close();
-         fileIn.close();
-         fileIn = new FileInputStream("/home/adam/Pulpit/hdidm/OBS_Statistics.9061.cer");
-         in = new ObjectInputStream(fileIn);
-         stat_dates = (Date[]) in.readObject();
-         stat_num1 = (Double[][]) in.readObject();
-         stat_num2 = (Double[][]) in.readObject();
-         in.close();
-         fileIn.close();
-      }catch(Exception i){i.printStackTrace();}
-      System.out.println("DATA LOADED"+stat_num1[0][0]);
-        Pair p = prepare.prepare_gmm_histograms(gmm_num1, -350.0, 350.0, 300);
-        for(int i=0;i<1;i++){
-            for(int j=120;j<130;j++){
-                System.out.println(j+" "+p.first[i][j] + " ");
-            }
-            System.out.println();
-        }
+//      Date []gmm_dates = null;
+//      Double [][] gmm_num1 = null;
+//      Double [][] gmm_num2 = null;
+//      Date []stat_dates = null;
+//      Double [][] stat_num1 = null;
+//      Double [][] stat_num2 = null;
+//      try
+//      {
+//         FileInputStream fileIn = new FileInputStream("/home/adam/Pulpit/hdidm/OBS_GMM.V2.9061.cer");
+//         ObjectInputStream in = new ObjectInputStream(fileIn);
+//         gmm_dates = (Date[]) in.readObject();
+//         gmm_num1 = (Double[][]) in.readObject();
+//         gmm_num2 = (Double[][]) in.readObject();
+//         in.close();
+//         fileIn.close();
+//         fileIn = new FileInputStream("/home/adam/Pulpit/hdidm/OBS_Statistics.9061.cer");
+//         in = new ObjectInputStream(fileIn);
+//         stat_dates = (Date[]) in.readObject();
+//         stat_num1 = (Double[][]) in.readObject();
+//         stat_num2 = (Double[][]) in.readObject();
+//         in.close();
+//         fileIn.close();
+//      }catch(Exception i){i.printStackTrace();}
+//      System.out.println("DATA LOADED "+stat_num1[0][0]);
+//      for(int i=1470;i<1510;i++){
+//          System.out.println(stat_num1[i][5]);
+//      }
+//        Pair p = prepare.prepare_gmm_histograms(gmm_num1, -350.0, 350.0, 300);
+//        for(int i=0;i<10;i++) System.out.println(gmm_dates[i]);
+//        Date d = gmm_dates[0];
+//        Calendar cal = Calendar.getInstance();
+//        cal.setTime(d);
+//        cal.add(Calendar.MINUTE, 60);
+//        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+//        String res = formatter.format(cal.getTime());
+//        System.out.println(res);
+//        System.out.println(cal.getTime());
+        
+//        for(int i=0;i<1;i++){
+//            for(int j=120;j<130;j++){
+//                System.out.println(j+" "+p.first[i][j] + " ");
+//            }
+//            System.out.println();
+//        }
 
+    
     ///////////////////// TESTS /////////////////
     
 //    create_gmm_histogram(Double[] p, Double[] m, Double[] s, Double[] bin_edges)
@@ -111,11 +143,23 @@ public class PrepareData {
 //        for(int i=0;i<Array.getLength(res);i++){
 //            System.out.print(res[i] + " ");
 //        }
-        
+//        DataFrame d = new DataFrame(gmm_dates, stat_num1, stat_num2, gmm_num2);
+//        d.showInputData(1910, 1920);
+
+       PreparedData pd = prepare.prepare_train_data_V2("/home/adam/Pulpit/hdidm/", "OBS_GMM.V2.9061.pkl", "OBS_Statistics.9061.pkl");
+       for(int i=0;i<30;i++){
+           System.out.print(i + ": ");
+           System.out.print(pd.dates.get(i) + " ");
+           System.out.print(pd.labels.get(i) + " ");
+           System.out.print(pd.gmm_hist_buy.get(i)[0] + " ");
+           System.out.print(pd.gmm_hist_sell.get(i)[0] + "\n");
+       } 
+       
+       
     }
     
     public void loadGmm(String path){
-        gmmLoader.loadData(path);
+        gmmLoader.loadData(path); 
     }
     
     public void loadStatistics(String path){
@@ -210,6 +254,74 @@ public class PrepareData {
     //    return gmm_hist_buy, gmm_hist_sell
         return new Pair(gmm_hist_buy, gmm_hist_sell);
     }
+    public PreparedData prepare_train_data_V2(String directory, String gmm, String stat){
+        
+        System.out.println("LOADING DATA");
+        //*
+            Date []gmm_dates = null;
+            Double [][] gmm_num1 = null;
+            Double [][] gmm_num2 = null;
+            Date []stat_dates = null;
+            Double [][] stat_num1 = null;
+            Double [][] stat_num2 = null;
+            try
+            {
+               FileInputStream fileIn = new FileInputStream("/home/adam/Pulpit/hdidm/OBS_GMM.V2.9061.cer");
+               ObjectInputStream in = new ObjectInputStream(fileIn);
+               gmm_dates = (Date[]) in.readObject();
+               gmm_num1 = (Double[][]) in.readObject();
+               gmm_num2 = (Double[][]) in.readObject();
+               in.close();
+               fileIn.close();
+               fileIn = new FileInputStream("/home/adam/Pulpit/hdidm/OBS_Statistics.9061.cer");
+               in = new ObjectInputStream(fileIn);
+               stat_dates = (Date[]) in.readObject();
+               stat_num1 = (Double[][]) in.readObject();
+               stat_num2 = (Double[][]) in.readObject();
+               in.close();
+               fileIn.close();
+            }catch(Exception i){i.printStackTrace();}
+
+            gmmLoader.dates = gmm_dates;
+            gmmLoader.num1 = gmm_num1;
+            gmmLoader.num2 = gmm_num2;
+            statLoader.dates = stat_dates;
+            statLoader.num1 = stat_num1;
+            statLoader.num2 = stat_num2;
+
+        /*/
+        loadGmm(directory+gmm);
+        loadStatistics(directory+stat);
+        //*/
+        System.out.println("PREPARING DF");
+        DataFrame d = new DataFrame(gmmLoader.dates, statLoader.num1, statLoader.num2, gmmLoader.num2);
+        System.out.println("PREPARING HISTOGRAMS");
+        Pair p = prepare_gmm_histograms(gmmLoader.num1, -350.0, 350.0, 3000);
+        System.out.println("FINISHING TOUCHES");
+        ArrayList<Integer> selected_ids = new ArrayList<>();
+        ArrayList<Date> date_time = new ArrayList<>();
+        ArrayList<Integer> labels = new ArrayList<>();
+        ArrayList<Double[]> gmm_hist_buy = new ArrayList<>();
+        ArrayList<Double[]> gmm_hist_sell = new ArrayList<>();
+        for(int i=0;i<d.size;i++){
+            if(d.selected.get(i)){
+//                if(selected_ids.isEmpty() || !Objects.equals(selected_ids.get(selected_ids.size()-1), d.ID.get(i))){
+                    selected_ids.add(d.ID.get(i));
+                    date_time.add(d.dates.get(d.ID.get(i)));
+                    labels.add(d.labels.get(i));
+                    gmm_hist_buy.add(p.first[d.ID.get(i)]);
+                    gmm_hist_sell.add(p.second[d.ID.get(i)]);
+                    
+//                } 
+            }
+        }
+        System.out.println("DONE");
+        return new PreparedData(date_time, labels, gmm_hist_buy, gmm_hist_sell);
+    }
+    
+    
+    
+    
     
     
 }

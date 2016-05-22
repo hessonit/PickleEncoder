@@ -71,6 +71,7 @@ public class PickleEncoder {
     }
     
     public HashMap<String, ArrayList<String>> getData(String path) {
+        System.out.println("path: "+path);
         HashMap<String, ArrayList<String>> idToCountries = new HashMap<String, ArrayList<String>>();
         File f = new File(path);
 //        System.out.println(f.length());
@@ -113,7 +114,8 @@ public class PickleEncoder {
         String datetime = input.toString();
         int size = datetime.length();
         datetime = datetime.substring(1, size-1);
-        size = datetime.length();
+//        System.out.println(datetime.substring(0, 20));
+        //size = datetime.length();
         
         String []dates = datetime.split(", ");
         size = Array.getLength(dates);
